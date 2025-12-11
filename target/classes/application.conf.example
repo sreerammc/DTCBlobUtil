@@ -1,0 +1,33 @@
+# Azure Blob Storage Configuration
+blob {
+  # Option 1: Use connection string
+  connectionString = "DefaultEndpointsProtocol=https;AccountName=your_account;AccountKey=your_key;EndpointSuffix=core.windows.net"
+  
+  # Option 2: Use managed identity (set useManagedIdentity = true)
+  # useManagedIdentity = true
+  # accountName = "your_account_name"
+  
+  # Option 3: Use service principal
+  # accountName = "your_account_name"
+  # tenantId = "your_tenant_id_guid"
+  # clientId = "your_client_id_guid"
+  # clientSecret = "your_client_secret_value"
+  
+  containerName = "your_container_name"
+  pollingIntervalSeconds = 60  # Poll every 60 seconds (1 minute)
+  processHistoricalData = false  # false = only new changes after startup (default), true = process all blobs on startup
+}
+
+# PostgreSQL Database Configuration
+database {
+  host = "localhost"
+  port = 5432
+  database = "postgres"
+  username = "admin"
+  password = "admin"
+  schema = "public"
+  tableName = "blob_changes"
+  maxPoolSize = 10
+}
+
+
