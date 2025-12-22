@@ -6,6 +6,7 @@ package com.dtc.blobutil.config;
 public class BlobStorageConfig {
     private String accountName;
     private String containerName;
+    private String archiveContainerName;
     private String connectionString;
     private boolean useManagedIdentity;
     private String tenantId;
@@ -13,10 +14,12 @@ public class BlobStorageConfig {
     private String clientSecret;
     private long pollingIntervalSeconds; // Polling interval in seconds
     private boolean processHistoricalData; // If true, process all blobs on startup; if false, only new changes
+    private int archiveProcessingDelayMinutes; // Minimum age in minutes before processing archive files
 
     public BlobStorageConfig() {
         this.pollingIntervalSeconds = 60; // Default: poll every 60 seconds
         this.processHistoricalData = false; // Default: only process new changes after startup
+        this.archiveProcessingDelayMinutes = 10; // Default: process files older than 10 minutes
     }
 
     public String getAccountName() {
@@ -33,6 +36,14 @@ public class BlobStorageConfig {
 
     public void setContainerName(String containerName) {
         this.containerName = containerName;
+    }
+
+    public String getArchiveContainerName() {
+        return archiveContainerName;
+    }
+
+    public void setArchiveContainerName(String archiveContainerName) {
+        this.archiveContainerName = archiveContainerName;
     }
 
     public String getConnectionString() {
@@ -89,6 +100,14 @@ public class BlobStorageConfig {
 
     public void setProcessHistoricalData(boolean processHistoricalData) {
         this.processHistoricalData = processHistoricalData;
+    }
+
+    public int getArchiveProcessingDelayMinutes() {
+        return archiveProcessingDelayMinutes;
+    }
+
+    public void setArchiveProcessingDelayMinutes(int archiveProcessingDelayMinutes) {
+        this.archiveProcessingDelayMinutes = archiveProcessingDelayMinutes;
     }
 }
 

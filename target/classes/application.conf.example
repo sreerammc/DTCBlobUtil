@@ -14,8 +14,10 @@ blob {
   # clientSecret = "your_client_secret_value"
   
   containerName = "your_container_name"
+  archiveContainerName = "your_archive_container_name"  # Container for archive file processing
   pollingIntervalSeconds = 60  # Poll every 60 seconds (1 minute)
   processHistoricalData = false  # false = only new changes after startup (default), true = process all blobs on startup
+  archiveProcessingDelayMinutes = 10  # Process archive files older than this many minutes (default: 10)
 }
 
 # PostgreSQL Database Configuration
@@ -30,4 +32,24 @@ database {
   maxPoolSize = 10
 }
 
+# InfluxDB 3 / FlightSQL configuration
+influx {
+  # InfluxDB 3 endpoint
+  host = "your-cluster-host.com"
+  port = 443
 
+  # Protocol: "grpc" (FlightSQL), "http", or "https"
+  # Default is "grpc" if not specified
+  protocol = "https"  # Use "http" or "https" for HTTP/HTTPS, "grpc" for FlightSQL
+
+  # Database and token
+  database = "iris_db"
+  token = "YOUR_DB_TOKEN"
+
+  # SQL template; %s will be replaced with the file_name / blob_name
+  queryTemplate = "SELECT count(*) FROM iris_data \\n                   WHERE time >= NOW() - INTERVAL '1 day' \\n                     AND file_name = '%s'"
+
+  # SSL / TLS handling:
+  # false = normal TLS (validate cert); true = connect without TLS (insecure, only for dev)
+  skipTlsValidation = false
+}

@@ -54,6 +54,12 @@ public class ConfigLoader {
             blobConfig.setContainerName(System.getenv("BLOB_CONTAINER_NAME"));
         }
 
+        if (config.hasPath("blob.archiveContainerName")) {
+            blobConfig.setArchiveContainerName(config.getString("blob.archiveContainerName"));
+        } else {
+            blobConfig.setArchiveContainerName(System.getenv("BLOB_ARCHIVE_CONTAINER_NAME"));
+        }
+
         if (config.hasPath("blob.connectionString")) {
             blobConfig.setConnectionString(config.getString("blob.connectionString"));
         } else {
@@ -96,7 +102,64 @@ public class ConfigLoader {
             blobConfig.setProcessHistoricalData(Boolean.parseBoolean(System.getenv("BLOB_PROCESS_HISTORICAL_DATA")));
         }
 
+        if (config.hasPath("blob.archiveProcessingDelayMinutes")) {
+            blobConfig.setArchiveProcessingDelayMinutes(config.getInt("blob.archiveProcessingDelayMinutes"));
+        } else if (System.getenv("BLOB_ARCHIVE_PROCESSING_DELAY_MINUTES") != null) {
+            blobConfig.setArchiveProcessingDelayMinutes(Integer.parseInt(System.getenv("BLOB_ARCHIVE_PROCESSING_DELAY_MINUTES")));
+        }
+
         appConfig.setBlobStorageConfig(blobConfig);
+
+        // Load InfluxDB / FlightSQL config
+        InfluxConfig influxConfig = new InfluxConfig();
+        if (config.hasPath("influx.host")) {
+            influxConfig.setHost(config.getString("influx.host"));
+        } else {
+            influxConfig.setHost(System.getenv("INFLUX_HOST"));
+        }
+
+        if (config.hasPath("influx.port")) {
+            influxConfig.setPort(config.getInt("influx.port"));
+        } else if (System.getenv("INFLUX_PORT") != null) {
+            influxConfig.setPort(Integer.parseInt(System.getenv("INFLUX_PORT")));
+        }
+
+        if (config.hasPath("influx.database")) {
+            influxConfig.setDatabase(config.getString("influx.database"));
+        } else {
+            influxConfig.setDatabase(System.getenv("INFLUX_DATABASE"));
+        }
+
+        if (config.hasPath("influx.token")) {
+            influxConfig.setToken(config.getString("influx.token"));
+        } else {
+            influxConfig.setToken(System.getenv("INFLUX_TOKEN"));
+        }
+
+        if (config.hasPath("influx.queryTemplate")) {
+            influxConfig.setQueryTemplate(config.getString("influx.queryTemplate"));
+        } else {
+            influxConfig.setQueryTemplate(System.getenv("INFLUX_QUERY_TEMPLATE"));
+        }
+
+        if (config.hasPath("influx.skipTlsValidation")) {
+            influxConfig.setSkipTlsValidation(config.getBoolean("influx.skipTlsValidation"));
+        } else if (System.getenv("INFLUX_SKIP_TLS_VALIDATION") != null) {
+            influxConfig.setSkipTlsValidation(Boolean.parseBoolean(System.getenv("INFLUX_SKIP_TLS_VALIDATION")));
+        }
+
+        if (config.hasPath("influx.protocol")) {
+            influxConfig.setProtocol(config.getString("influx.protocol"));
+        } else if (System.getenv("INFLUX_PROTOCOL") != null) {
+            influxConfig.setProtocol(System.getenv("INFLUX_PROTOCOL"));
+        } else if (config.hasPath("influx.useHttps")) {
+            // Backward compatibility: useHttps option
+            influxConfig.setUseHttps(config.getBoolean("influx.useHttps"));
+        } else if (System.getenv("INFLUX_USE_HTTPS") != null) {
+            influxConfig.setUseHttps(Boolean.parseBoolean(System.getenv("INFLUX_USE_HTTPS")));
+        }
+
+        appConfig.setInfluxConfig(influxConfig);
 
         // Load Database config
         DatabaseConfig dbConfig = new DatabaseConfig();

@@ -1,5 +1,5 @@
 # Maven
-# target/  # Commented out to include JAR files
+# target/  # Commented out to include JAR files in git
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup

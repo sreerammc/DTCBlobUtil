@@ -6,6 +6,7 @@ package com.dtc.blobutil.config;
 public class AppConfig {
     private BlobStorageConfig blobStorageConfig;
     private DatabaseConfig databaseConfig;
+    private InfluxConfig influxConfig;
 
     public BlobStorageConfig getBlobStorageConfig() {
         return blobStorageConfig;
@@ -22,6 +23,20 @@ public class AppConfig {
     public void setDatabaseConfig(DatabaseConfig databaseConfig) {
         this.databaseConfig = databaseConfig;
     }
+
+    public InfluxConfig getInfluxConfig() {
+        return influxConfig;
+    }
+
+    public void setInfluxConfig(InfluxConfig influxConfig) {
+        this.influxConfig = influxConfig;
+    }
 }
+
+
+
+
+
+
 
 

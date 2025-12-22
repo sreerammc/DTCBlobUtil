@@ -21,6 +21,7 @@
         <postgresql.version>42.7.1</postgresql.version>
         <slf4j.version>2.0.9</slf4j.version>
         <logback.version>1.4.14</logback.version>
+        <arrow.version>15.0.2</arrow.version>
         <jackson.version>2.15.2</jackson.version>
     </properties>
 
@@ -84,6 +85,13 @@
             <version>1.4.3</version>
         </dependency>
 
+        <!-- Apache Arrow Flight SQL for InfluxDB 3 / FlightSQL client -->
+        <dependency>
+            <groupId>org.apache.arrow</groupId>
+            <artifactId>flight-sql</artifactId>
+            <version>${arrow.version}</version>
+        </dependency>
+
         <!-- JUnit for testing -->
         <dependency>
             <groupId>junit</groupId>
@@ -110,6 +118,7 @@
                 <version>3.5.0</version>
                 <executions>
                     <execution>
+                        <id>blob-change-feed-sync</id>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
@@ -130,6 +139,32 @@
                                     <mainClass>com.dtc.blobutil.BlobChangeFeedSync</mainClass>
                                 </transformer>
                             </transformers>
+                            <finalName>blob-util-${project.version}</finalName>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>blob-archive-processor</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.dtc.blobutil.BlobArchiveProcessor</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>blob-util-archive-${project.version}</finalName>
                         </configuration>
                     </execution>
                 </executions>
