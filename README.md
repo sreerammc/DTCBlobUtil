@@ -1,12 +1,18 @@
 # Blob Change Feed to PostgreSQL Sync Utility
 
-A Java utility that synchronizes Azure Blob Storage change feed (insert and update events) to a PostgreSQL database along with metadata.
+A Java utility that synchronizes Azure Blob Storage change feed (insert and update events) to a PostgreSQL database along with metadata. This utility includes three main processors that can run independently or together:
+
+1. **BlobChangeFeedSync** - Syncs blob changes from Azure Blob Storage to PostgreSQL
+2. **BlobArchiveProcessor** - Processes archived blob files and updates record counts
+3. **InfluxVerificationProcessor** - Verifies archived data in InfluxDB
 
 ## Features
 
 - Reads blob change events from Azure Blob Storage
 - Filters for insert and update events only
 - Stores blob metadata, properties, and change information in PostgreSQL
+- Processes archived blob files and updates record counts
+- Verifies archived data in InfluxDB
 - Supports multiple authentication methods:
   - Connection string
   - Managed Identity
@@ -109,33 +115,88 @@ blob {
 
 ## Usage
 
-### Run the Utility
+### Running Individual Processors
 
-**Basic usage (uses default `application.conf` or environment variables):**
+Since all three processors are in the same JAR file, you need to specify the main class:
+
+#### 1. Blob Change Feed Sync
 ```bash
-java -jar target/blob-util-1.0.0.jar
+java -cp target/blob-util-1.0.0.jar com.dtc.blobutil.BlobChangeFeedSync my-config.conf
 ```
 
-**Specify a custom config file:**
+**Or using -jar (default main class):**
 ```bash
 java -jar target/blob-util-1.0.0.jar my-config.conf
 ```
 
-**Using command-line option:**
+#### 2. Blob Archive Processor
 ```bash
-java -jar target/blob-util-1.0.0.jar -c /path/to/config.conf
-java -jar target/blob-util-1.0.0.jar --config application.conf
+java -cp target/blob-util-1.0.0.jar com.dtc.blobutil.BlobArchiveProcessor my-config.conf
 ```
 
-**Show help:**
+#### 3. Influx Verification Processor
 ```bash
-java -jar target/blob-util-1.0.0.jar --help
+java -cp target/blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf
 ```
 
 **Or with Maven:**
 ```bash
 mvn exec:java -Dexec.mainClass="com.dtc.blobutil.BlobChangeFeedSync" -Dexec.args="my-config.conf"
+mvn exec:java -Dexec.mainClass="com.dtc.blobutil.BlobArchiveProcessor" -Dexec.args="my-config.conf"
+mvn exec:java -Dexec.mainClass="com.dtc.blobutil.InfluxVerificationProcessor" -Dexec.args="my-config.conf"
 ```
+
+### Running All Three Processors Together
+
+You have several options:
+
+#### Option 1: Run in Separate Terminal Windows (Recommended)
+Open three separate terminal windows and run each processor:
+
+**Terminal 1:**
+```bash
+java -cp target/blob-util-1.0.0.jar com.dtc.blobutil.BlobChangeFeedSync my-config.conf
+```
+
+**Terminal 2:**
+```bash
+java -cp target/blob-util-1.0.0.jar com.dtc.blobutil.BlobArchiveProcessor my-config.conf
+```
+
+**Terminal 3:**
+```bash
+java -cp target/blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf
+```
+
+#### Option 2: Run in Background (Windows PowerShell)
+```powershell
+Start-Process java -ArgumentList "-cp","target/blob-util-1.0.0.jar","com.dtc.blobutil.BlobChangeFeedSync","my-config.conf" -WindowStyle Hidden
+Start-Process java -ArgumentList "-cp","target/blob-util-1.0.0.jar","com.dtc.blobutil.BlobArchiveProcessor","my-config.conf" -WindowStyle Hidden
+Start-Process java -ArgumentList "-cp","target/blob-util-1.0.0.jar","com.dtc.blobutil.InfluxVerificationProcessor","my-config.conf" -WindowStyle Hidden
+```
+
+#### Option 3: Use Batch Scripts
+
+Batch scripts are provided in the root directory:
+- `run-blob-sync.bat` - Runs BlobChangeFeedSync
+- `run-archive-processor.bat` - Runs BlobArchiveProcessor
+- `run-influx-verification.bat` - Runs InfluxVerificationProcessor
+- `run-all.bat` - Starts all three processors in separate windows
+
+Simply double-click the batch file or run from command line:
+```bash
+run-all.bat
+```
+
+### Process Flow
+
+The typical workflow is:
+
+1. **BlobChangeFeedSync** - Monitors blob storage for changes and syncs to PostgreSQL
+2. **BlobArchiveProcessor** - Processes archived files and updates record counts
+3. **InfluxVerificationProcessor** - Verifies the archived data exists in InfluxDB
+
+All three can run simultaneously as they work on different aspects of the pipeline.
 
 ## Database Schema
 
@@ -165,12 +226,19 @@ CREATE INDEX idx_blob_changes_last_modified ON blob_changes(last_modified);
 
 ## How It Works
 
+### BlobChangeFeedSync
 1. **Initialization**: The utility loads configuration and initializes database connections
 2. **Table Setup**: Creates the PostgreSQL table if it doesn't exist
 3. **Resume Point**: Checks for the last processed timestamp to resume from where it left off
 4. **Change Detection**: Scans the blob container for changes since the last processed timestamp
 5. **Filtering**: Filters for insert and update events only (BlobCreated, BlobPropertiesUpdated, BlobMetadataUpdated)
 6. **Upsert**: Inserts or updates records in PostgreSQL with blob metadata and properties
+
+### BlobArchiveProcessor
+Processes archived blob files and updates record counts in the database.
+
+### InfluxVerificationProcessor
+Verifies that archived data exists in InfluxDB and validates data integrity.
 
 ## Event Types
 
