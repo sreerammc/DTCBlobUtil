@@ -225,7 +225,7 @@ public class ArchiveFileProcessor {
     }
     
     /**
-     * Process events file (ExportedEvents format) with deduplication based on Id, RecordTime, SeqNo
+     * Process events file (ExportedEvents format) with deduplication based on Id, Fullname, RecordTime, SeqNo
      */
     private RecordCounts processEventsFile(ComplexData complexData, String blobName) throws FileProcessingException {
         if (complexData.getExportedEvents() == null) {
@@ -242,7 +242,7 @@ public class ArchiveFileProcessor {
 
         int totalRecords = events.size();
         
-        // Count distinct records (based on Id, RecordTime, SeqNo)
+        // Count distinct records (based on Id, Fullname, RecordTime, SeqNo)
         Set<EventObject> distinctEvents = new HashSet<>(events);
         int distinctRecords = distinctEvents.size();
 

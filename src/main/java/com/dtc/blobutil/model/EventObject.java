@@ -141,7 +141,7 @@ public class EventObject {
     }
 
     /**
-     * Equals and hashCode based on Id, RecordTime, and SeqNo (unique record identifier for events)
+     * Equals and hashCode based on Id, Fullname, RecordTime, and SeqNo (unique record identifier for events)
      */
     @Override
     public boolean equals(Object o) {
@@ -149,12 +149,13 @@ public class EventObject {
         if (o == null || getClass() != o.getClass()) return false;
         EventObject that = (EventObject) o;
         return Objects.equals(id, that.id) &&
+               Objects.equals(fullname, that.fullname) &&
                Objects.equals(recordTime, that.recordTime) &&
                Objects.equals(seqNo, that.seqNo);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, recordTime, seqNo);
+        return Objects.hash(id, fullname, recordTime, seqNo);
     }
 }
