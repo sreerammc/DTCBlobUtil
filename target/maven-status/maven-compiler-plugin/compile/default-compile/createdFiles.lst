@@ -20,5 +20,4 @@ com\dtc\blobutil\config\ConfigLoader.class
 com\dtc\blobutil\model\Header.class
 com\dtc\blobutil\BlobArchiveProcessor.class
 com\dtc\blobutil\model\DataObject.class
-com\dtc\blobutil\influx\InfluxFlightClient$1.class
 com\dtc\blobutil\config\InfluxConfig.class

@@ -86,9 +86,19 @@ public class InfluxVerificationProcessor {
 
             // Influx / FlightSQL config
             InfluxConfig influxConfig = config.getInfluxConfig();
-            logger.info("InfluxDB endpoint: {}:{}, protocol: {}, database: {}",
+            String protocol = influxConfig.getProtocol();
+            logger.info("InfluxDB endpoint: {}:{}, protocol: '{}', database: {}",
                 influxConfig.getHost(), influxConfig.getPort(), 
-                influxConfig.getProtocol(), influxConfig.getDatabase());
+                protocol, influxConfig.getDatabase());
+            
+            // Validate protocol is set
+            if (protocol == null || protocol.isEmpty()) {
+                logger.warn("InfluxDB protocol is not set, defaulting to 'grpc'");
+            } else {
+                logger.info("Using InfluxDB protocol: '{}' (will create {} client)", 
+                    protocol, 
+                    ("grpc".equalsIgnoreCase(protocol) ? "FlightSQL" : "HTTP"));
+            }
 
             if (influxConfig.getQueryTemplate() == null || influxConfig.getQueryTemplate().isEmpty()) {
                 throw new IllegalArgumentException("influx.queryTemplate is required in configuration");

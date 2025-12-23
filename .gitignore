@@ -1,5 +1,7 @@
 # Maven
-# target/  # Commented out to include JAR files in git
+# Note: target/ is NOT ignored to allow JAR files to be committed
+# If you want to ignore target/, uncomment the line below:
+# target/
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
@@ -35,7 +37,9 @@ my-config.conf
 
 # Compiled
 *.class
-# *.jar  # Commented out to include JAR files
+# Note: JAR files are NOT ignored - they will be committed to git
+# If you want to ignore JAR files, uncomment the line below:
+# *.jar
 *.war
 *.ear
 

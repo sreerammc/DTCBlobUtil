@@ -85,7 +85,14 @@
             <version>1.4.3</version>
         </dependency>
 
-        <!-- Apache Arrow Flight SQL for InfluxDB 3 / FlightSQL client -->
+        <!-- Official InfluxDB 3 Java client library -->
+        <dependency>
+            <groupId>com.influxdb</groupId>
+            <artifactId>influxdb3-java</artifactId>
+            <version>1.7.0</version>
+        </dependency>
+
+        <!-- Apache Arrow Flight SQL for InfluxDB 3 / FlightSQL client (kept for HTTP client fallback) -->
         <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>flight-sql</artifactId>

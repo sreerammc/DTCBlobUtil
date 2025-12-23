@@ -32,15 +32,23 @@ database {
   maxPoolSize = 10
 }
 
-# InfluxDB 3 / FlightSQL configuration
+# InfluxDB 3 configuration
+# You can use either FlightSQL (gRPC) or REST API (HTTP/HTTPS)
 influx {
   # InfluxDB 3 endpoint
   host = "your-cluster-host.com"
+  
+  # Port depends on protocol:
+  #   - For FlightSQL (grpc): typically 443 (TLS) or 8082 (insecure)
+  #   - For REST API (http/https): typically 8086 (HTTP) or 443/8086 (HTTPS)
   port = 443
 
-  # Protocol: "grpc" (FlightSQL), "http", or "https"
+  # Protocol options:
+  #   - "grpc"  : FlightSQL using gRPC/HTTP2 (recommended for production, better performance)
+  #   - "http"  : REST API using HTTP (for HTTP endpoints, typically port 8086)
+  #   - "https" : REST API using HTTPS (for HTTPS endpoints, typically port 443 or 8086)
   # Default is "grpc" if not specified
-  protocol = "https"  # Use "http" or "https" for HTTP/HTTPS, "grpc" for FlightSQL
+  protocol = "grpc"  # Options: "grpc", "http", or "https"
 
   # Database and token
   database = "iris_db"
@@ -50,6 +58,8 @@ influx {
   queryTemplate = "SELECT count(*) FROM iris_data \\n                   WHERE time >= NOW() - INTERVAL '1 day' \\n                     AND file_name = '%s'"
 
   # SSL / TLS handling:
-  # false = normal TLS (validate cert); true = connect without TLS (insecure, only for dev)
+  #   - false = normal TLS (validate certificate) - recommended for production
+  #   - true  = skip TLS validation (insecure, only for development/testing)
+  # Note: This applies to both FlightSQL (grpc) and REST API (https) protocols
   skipTlsValidation = false
 }

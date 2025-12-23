@@ -16,7 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 
 /**
- * HTTP/HTTPS client for InfluxDB 3 query API
+ * HTTP/HTTPS client for InfluxDB 3 Clustered using v1 compatibility API
+ * Uses the /query endpoint with InfluxQL queries
  */
 public class InfluxHttpClient implements InfluxClient {
     private static final Logger logger = LoggerFactory.getLogger(InfluxHttpClient.class);
@@ -29,9 +30,21 @@ public class InfluxHttpClient implements InfluxClient {
         this.objectMapper = new ObjectMapper();
         this.skipTlsValidation = config.isSkipTlsValidation();
         
-        if (skipTlsValidation && config.isHttpProtocol()) {
-            logger.warn("Influx HTTP: skipTlsValidation=true, using insecure SSL connection");
+        String protocol = config.getProtocol();
+        logger.info("Initializing InfluxDB REST API client:");
+        logger.info("  Protocol: {}", protocol);
+        logger.info("  Host: {}", config.getHost());
+        logger.info("  Port: {}", config.getPort());
+        logger.info("  Database: {}", config.getDatabase());
+        logger.info("  Skip TLS Validation: {}", skipTlsValidation);
+        
+        if (skipTlsValidation && "https".equalsIgnoreCase(protocol)) {
+            logger.warn("Influx HTTPS: skipTlsValidation=true, using insecure SSL connection (not recommended for production)");
             setupInsecureSsl();
+        } else if ("https".equalsIgnoreCase(protocol)) {
+            logger.info("Influx HTTPS: Using secure TLS connection with certificate validation");
+        } else {
+            logger.info("Influx HTTP: Using insecure (non-TLS) connection");
         }
     }
 
@@ -61,10 +74,12 @@ public class InfluxHttpClient implements InfluxClient {
 
     private String buildQueryUrl(String sql) throws Exception {
         String baseUrl = config.getHttpUrl();
-        // InfluxDB 3 query endpoint (matches curl: /api/v3/query_sql)
-        String endpoint = baseUrl + "/api/v3/query_sql";
+        // InfluxDB 3 Clustered v1 compatibility API endpoint
+        // Documentation: https://docs.influxdata.com/influxdb3/clustered/api/v1-compatibility/#tag/Query
+        String endpoint = baseUrl + "/query";
         
         // Build query string with URL-encoded parameters
+        // Parameters: db (database) and q (InfluxQL query)
         String encodedDb = java.net.URLEncoder.encode(config.getDatabase(), StandardCharsets.UTF_8.toString());
         String encodedSql = java.net.URLEncoder.encode(sql, StandardCharsets.UTF_8.toString());
         
@@ -78,11 +93,24 @@ public class InfluxHttpClient implements InfluxClient {
         } catch (java.net.MalformedURLException e) {
             throw new IOException("Invalid InfluxDB URL: " + urlString, e);
         }
+        
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         
-        // Use GET method (as per curl example)
+        // Handle HTTPS connections
+        if (url.getProtocol().equals("https")) {
+            if (skipTlsValidation) {
+                // SSL context should already be set up in constructor
+                logger.debug("Using insecure SSL connection for HTTPS");
+            } else {
+                logger.debug("Using secure HTTPS connection with certificate validation");
+            }
+        }
+        
+        // Use GET method (as per InfluxDB 3 Clustered v1 compatibility API)
+        // Documentation: https://docs.influxdata.com/influxdb3/clustered/api/v1-compatibility/#tag/Query
         conn.setRequestMethod("GET");
-        conn.setRequestProperty("Authorization", "Bearer " + config.getToken());
+        // Use "Token" authentication scheme (not "Bearer") for v1 compatibility API
+        conn.setRequestProperty("Authorization", "Token " + config.getToken());
         conn.setRequestProperty("Accept", "application/json");
         
         conn.setConnectTimeout(30000);
@@ -94,9 +122,51 @@ public class InfluxHttpClient implements InfluxClient {
     private long extractCountFromResponse(JsonNode response) throws Exception {
         logger.debug("Parsing InfluxDB response: {}", response.toString());
         
-        // InfluxDB 3 /api/v3/query_sql returns a JSON array directly
-        // For count(*) queries, response format: [{"count(*)": 5}] or [{"count": 5}]
+        // InfluxDB 3 Clustered v1 compatibility API returns InfluxQL format:
+        // {
+        //   "results": [{
+        //     "series": [{
+        //       "name": "...",
+        //       "columns": ["time", "count"],
+        //       "values": [[timestamp, count]]
+        //     }]
+        //   }]
+        // }
+        // Check for results/series pattern first (InfluxQL format)
+        if (response.has("results")) {
+            JsonNode results = response.get("results");
+            if (results.isArray() && results.size() > 0) {
+                JsonNode firstResult = results.get(0);
+                
+                // Check for error in result
+                if (firstResult.has("error")) {
+                    String error = firstResult.get("error").asText();
+                    throw new IllegalStateException("InfluxDB query error: " + error);
+                }
+                
+                if (firstResult.has("series")) {
+                    JsonNode series = firstResult.get("series");
+                    if (series.isArray() && series.size() > 0) {
+                        JsonNode firstSeries = series.get(0);
+                        if (firstSeries.has("values")) {
+                            JsonNode values = firstSeries.get("values");
+                            if (values.isArray() && values.size() > 0) {
+                                JsonNode firstRow = values.get(0);
+                                if (firstRow.isArray() && firstRow.size() > 0) {
+                                    // In InfluxQL format, count is typically the last column
+                                    // or the column after "time"
+                                    long count = firstRow.get(firstRow.size() - 1).asLong();
+                                    logger.debug("Extracted count from InfluxQL format: {}", count);
+                                    return count;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         
+        // Fallback: Handle direct array format (for other API versions)
         if (response.isArray()) {
             if (response.size() == 0) {
                 logger.debug("Empty array response, returning count 0");
@@ -164,30 +234,6 @@ public class InfluxHttpClient implements InfluxClient {
             }
         }
         
-        // Check for results/series pattern (InfluxQL format - legacy)
-        if (response.has("results")) {
-            JsonNode results = response.get("results");
-            if (results.isArray() && results.size() > 0) {
-                JsonNode firstResult = results.get(0);
-                if (firstResult.has("series")) {
-                    JsonNode series = firstResult.get("series");
-                    if (series.isArray() && series.size() > 0) {
-                        JsonNode firstSeries = series.get(0);
-                        if (firstSeries.has("values")) {
-                            JsonNode values = firstSeries.get("values");
-                            if (values.isArray() && values.size() > 0) {
-                                JsonNode firstRow = values.get(0);
-                                if (firstRow.isArray() && firstRow.size() > 0) {
-                                    long count = firstRow.get(0).asLong();
-                                    logger.debug("Extracted count from InfluxQL format: {}", count);
-                                    return count;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
         
         logger.error("Could not extract count from response. Response type: {}, Content: {}", 
             response.getNodeType(), response.toString());
