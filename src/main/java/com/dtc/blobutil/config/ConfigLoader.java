@@ -2,6 +2,8 @@ package com.dtc.blobutil.config;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
@@ -9,6 +11,7 @@ import java.io.File;
  * Loads configuration from application.conf or environment variables
  */
 public class ConfigLoader {
+    private static final Logger logger = LoggerFactory.getLogger(ConfigLoader.class);
     private static final String DEFAULT_CONFIG_FILE = "application.conf";
 
     /**
@@ -23,19 +26,55 @@ public class ConfigLoader {
      * @param configFilePath Path to the configuration file (null to use default)
      */
     public static AppConfig loadConfig(String configFilePath) {
-        Config config = ConfigFactory.load();
+        // Load default config from classpath first (for defaults)
+        Config defaultConfig = ConfigFactory.load();
         
         // Try to load from file if specified or default location
         String configFileToUse = configFilePath != null ? configFilePath : DEFAULT_CONFIG_FILE;
         File configFile = findConfigFile(configFileToUse);
         
+        Config config;
         if (configFile != null && configFile.exists()) {
-            config = ConfigFactory.parseFile(configFile).withFallback(config);
+            logger.info("Loading config from: {}", configFile.getAbsolutePath());
+            // Parse the specified file - this should be the primary config
+            Config fileConfig = ConfigFactory.parseFile(configFile);
+            
+            // Debug: Check what's in the file BEFORE merging
+            if (fileConfig.hasPath("influx.protocol")) {
+                String fileProtocol = fileConfig.getString("influx.protocol");
+                logger.info("Config file contains influx.protocol = '{}'", fileProtocol);
+            } else {
+                logger.warn("Config file does NOT contain influx.protocol");
+            }
+            
+            // Merge: file config takes precedence, default config is fallback
+            // withFallback means: use fileConfig first, fall back to defaultConfig if key missing
+            config = fileConfig.withFallback(defaultConfig);
+            
+            // Check final merged value AFTER merging
+            if (config.hasPath("influx.protocol")) {
+                String finalProtocol = config.getString("influx.protocol");
+                logger.info("Final merged config has influx.protocol = '{}' (file should take precedence)", finalProtocol);
+                
+                // Verify the file value is being used
+                if (fileConfig.hasPath("influx.protocol")) {
+                    String fileProtocol = fileConfig.getString("influx.protocol");
+                    if (!fileProtocol.equals(finalProtocol)) {
+                        logger.error("WARNING: Config file protocol '{}' was overridden by default config '{}'!", 
+                            fileProtocol, finalProtocol);
+                    }
+                }
+            }
         } else if (configFilePath != null) {
             // If user specified a file path but it doesn't exist, warn them
-            System.err.println("Warning: Config file not found: " + configFilePath);
-            System.err.println("Searched in: " + new File(configFileToUse).getAbsolutePath());
-            System.err.println("Falling back to environment variables and default config.");
+            logger.warn("Config file not found: {}", configFilePath);
+            logger.warn("Searched in: {}", new File(configFileToUse).getAbsolutePath());
+            logger.warn("Falling back to environment variables and default config.");
+            config = defaultConfig;
+        } else {
+            // No file specified, use defaults
+            logger.info("No config file specified, using default config and environment variables");
+            config = defaultConfig;
         }
 
         AppConfig appConfig = new AppConfig();
@@ -149,15 +188,26 @@ public class ConfigLoader {
         }
 
         if (config.hasPath("influx.protocol")) {
-            influxConfig.setProtocol(config.getString("influx.protocol"));
+            String protocolValue = config.getString("influx.protocol");
+            logger.info("Found influx.protocol in config: '{}'", protocolValue);
+            influxConfig.setProtocol(protocolValue);
+            logger.debug("Set protocol to: '{}'", influxConfig.getProtocol());
         } else if (System.getenv("INFLUX_PROTOCOL") != null) {
-            influxConfig.setProtocol(System.getenv("INFLUX_PROTOCOL"));
+            String envProtocol = System.getenv("INFLUX_PROTOCOL");
+            logger.info("Found INFLUX_PROTOCOL env var: '{}'", envProtocol);
+            influxConfig.setProtocol(envProtocol);
         } else if (config.hasPath("influx.useHttps")) {
             // Backward compatibility: useHttps option
+            logger.warn("Using deprecated influx.useHttps option (use influx.protocol instead)");
             influxConfig.setUseHttps(config.getBoolean("influx.useHttps"));
         } else if (System.getenv("INFLUX_USE_HTTPS") != null) {
+            logger.warn("Using deprecated INFLUX_USE_HTTPS env var (use INFLUX_PROTOCOL instead)");
             influxConfig.setUseHttps(Boolean.parseBoolean(System.getenv("INFLUX_USE_HTTPS")));
+        } else {
+            logger.info("No protocol specified, using default: 'grpc'");
         }
+        
+        logger.info("Final InfluxDB protocol value: '{}'", influxConfig.getProtocol());
 
         appConfig.setInfluxConfig(influxConfig);
 

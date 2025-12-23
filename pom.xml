@@ -23,14 +23,30 @@
         <logback.version>1.4.14</logback.version>
         <arrow.version>15.0.2</arrow.version>
         <jackson.version>2.15.2</jackson.version>
+        <netty.version>4.2.7.Final</netty.version>
     </properties>
 
     <dependencies>
         <!-- Azure Blob Storage SDK -->
+        <!-- Exclude Netty to avoid conflicts with InfluxDB 3 client -->
         <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-storage-blob</artifactId>
             <version>${azure.storage.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-codec-http</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-handler-proxy</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         
         <!-- Azure Identity for authentication -->
@@ -92,12 +108,18 @@
             <version>1.7.0</version>
         </dependency>
 
-        <!-- Apache Arrow Flight SQL for InfluxDB 3 / FlightSQL client (kept for HTTP client fallback) -->
+        <!-- Apache Arrow memory manager - required by InfluxDB 3 client for buffer allocation -->
+        <!-- The InfluxDB client uses Arrow 18.3.0 internally and needs this for memory management -->
+        <!-- Using arrow-memory-unsafe instead of arrow-memory-netty to avoid Netty version conflicts -->
+        <!-- Must match the Arrow version used by influxdb3-java (18.3.0) -->
         <dependency>
             <groupId>org.apache.arrow</groupId>
-            <artifactId>flight-sql</artifactId>
-            <version>${arrow.version}</version>
+            <artifactId>arrow-memory-unsafe</artifactId>
+            <version>18.3.0</version>
         </dependency>
+
+        <!-- Note: Removed old flight-sql dependency (15.0.2) as it conflicts with InfluxDB 3 client's Arrow 18.3.0 -->
+        <!-- The official InfluxDB 3 client handles FlightSQL internally, so we don't need the old dependency -->
 
         <!-- JUnit for testing -->
         <dependency>
@@ -107,6 +129,58 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Force Netty version to match InfluxDB 3 client requirements -->
+            <!-- This resolves conflicts between Azure SDK (4.1.x) and InfluxDB client (4.2.x) -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-all</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-common</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-buffer</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-http</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-http2</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-transport</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-resolver</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>

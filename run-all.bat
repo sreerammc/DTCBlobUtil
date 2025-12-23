@@ -13,7 +13,7 @@ start "Blob Archive Processor" cmd /k "java -cp target\blob-util-1.0.0.jar com.d
 timeout /t 2 /nobreak >nul
 
 echo [3/3] Starting Influx Verification Processor...
-start "Influx Verification Processor" cmd /k "java -cp target\blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf"
+start "Influx Verification Processor" cmd /k "java --add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED -cp target\blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf"
 timeout /t 2 /nobreak >nul
 
 echo.

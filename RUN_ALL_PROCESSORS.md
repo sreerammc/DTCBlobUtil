@@ -22,8 +22,10 @@ java -cp target/blob-util-1.0.0.jar com.dtc.blobutil.BlobArchiveProcessor my-con
 
 ### 3. Influx Verification Processor
 ```bash
-java -cp target/blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf
+java --add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED -cp target/blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf
 ```
+
+**Note:** The `--add-opens` JVM argument is required for Java 9+ when using Apache Arrow (used by InfluxDB 3 FlightSQL client). This exposes JDK internals needed by Arrow for memory management.
 
 ## Running All Three Together
 
@@ -44,7 +46,7 @@ java -cp target/blob-util-1.0.0.jar com.dtc.blobutil.BlobArchiveProcessor my-con
 
 **Terminal 3:**
 ```bash
-java -cp target/blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf
+java --add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED -cp target/blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf
 ```
 
 ### Option 2: Run in Background (Windows PowerShell)
@@ -75,7 +77,7 @@ pause
 **run-influx-verification.bat:**
 ```batch
 @echo off
-java -cp target\blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf
+java --add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED -cp target\blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf
 pause
 ```
 
@@ -87,7 +89,7 @@ start "Blob Change Feed Sync" cmd /k "java -cp target\blob-util-1.0.0.jar com.dt
 timeout /t 2 /nobreak >nul
 start "Blob Archive Processor" cmd /k "java -cp target\blob-util-1.0.0.jar com.dtc.blobutil.BlobArchiveProcessor my-config.conf"
 timeout /t 2 /nobreak >nul
-start "Influx Verification Processor" cmd /k "java -cp target\blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf"
+start "Influx Verification Processor" cmd /k "java --add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED -cp target\blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf"
 echo All processors started in separate windows.
 pause
 ```

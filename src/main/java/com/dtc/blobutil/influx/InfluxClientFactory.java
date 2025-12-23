@@ -14,16 +14,27 @@ public class InfluxClientFactory {
         String protocol = config.getProtocol();
         logger.info("Creating InfluxDB client with protocol: '{}' (host: {}, port: {})", 
             protocol, config.getHost(), config.getPort());
+        
+        logger.debug("Protocol from config object: '{}' (null: {}, empty: {})", 
+            protocol, protocol == null, protocol != null && protocol.isEmpty());
 
-        if ("grpc".equalsIgnoreCase(protocol)) {
+        if (protocol == null || protocol.isEmpty()) {
+            logger.warn("Protocol is null or empty, defaulting to 'grpc'");
+            protocol = "grpc";
+        }
+        
+        String protocolLower = protocol.toLowerCase().trim();
+        logger.debug("Normalized protocol: '{}'", protocolLower);
+        
+        if ("grpc".equals(protocolLower)) {
             logger.info("Using InfluxFlightClient (FlightSQL/gRPC) for protocol: {}", protocol);
             return new InfluxFlightClient(config);
-        } else if ("http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)) {
+        } else if ("http".equals(protocolLower) || "https".equals(protocolLower)) {
             logger.info("Using InfluxHttpClient (HTTP REST API) for protocol: {}", protocol);
             return new InfluxHttpClient(config);
         } else {
-            throw new IllegalArgumentException("Unsupported InfluxDB protocol: " + protocol + 
-                ". Must be 'grpc', 'http', or 'https'");
+            throw new IllegalArgumentException("Unsupported InfluxDB protocol: '" + protocol + 
+                "'. Must be 'grpc', 'http', or 'https'");
         }
     }
 }
