@@ -70,7 +70,7 @@ public class InfluxFlightClient implements InfluxClient {
      * Uses the official InfluxDB 3 client's query() method which returns Stream<Object[]>.
      */
     public long queryCount(String sql) throws Exception {
-        logger.debug("Executing Influx FlightSQL query using official client: {}", sql);
+        logger.info("Executing InfluxDB FlightSQL query: {}", sql);
         
         try {
             // Official client's query() method returns Stream<Object[]>

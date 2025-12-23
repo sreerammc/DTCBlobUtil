@@ -183,6 +183,7 @@ public class InfluxVerificationProcessor {
                     }
 
                     String sql = String.format(queryTemplate, blobName);
+                    logger.info("InfluxDB query for blob '{}': {}", blobName, sql);
 
                     long count = executeWithRetry(influxClient, sql, blobName);
                     logger.info("Influx count(*) for blob {} is {}", blobName, count);

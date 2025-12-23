@@ -53,7 +53,8 @@ public class InfluxHttpClient implements InfluxClient {
      */
     public long queryCount(String sql) throws Exception {
         String url = buildQueryUrl(sql);
-        logger.debug("Executing Influx HTTP query: {} to {}", sql, url);
+        logger.info("Executing InfluxDB HTTP query: {}", sql);
+        logger.debug("InfluxDB HTTP query URL: {}", url);
 
         HttpURLConnection conn = createConnection(url);
         try {
