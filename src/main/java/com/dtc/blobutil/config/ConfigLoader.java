@@ -175,10 +175,26 @@ public class ConfigLoader {
             influxConfig.setToken(System.getenv("INFLUX_TOKEN"));
         }
 
+        // Load query templates - prefer separate templates for data and events
+        if (config.hasPath("influx.queryDataTemplate")) {
+            influxConfig.setQueryDataTemplate(config.getString("influx.queryDataTemplate"));
+        } else if (System.getenv("INFLUX_QUERY_DATA_TEMPLATE") != null) {
+            influxConfig.setQueryDataTemplate(System.getenv("INFLUX_QUERY_DATA_TEMPLATE"));
+        }
+        
+        if (config.hasPath("influx.queryEventsTemplate")) {
+            influxConfig.setQueryEventsTemplate(config.getString("influx.queryEventsTemplate"));
+        } else if (System.getenv("INFLUX_QUERY_EVENTS_TEMPLATE") != null) {
+            influxConfig.setQueryEventsTemplate(System.getenv("INFLUX_QUERY_EVENTS_TEMPLATE"));
+        }
+        
+        // Backward compatibility: if old queryTemplate is set, use it for both
         if (config.hasPath("influx.queryTemplate")) {
-            influxConfig.setQueryTemplate(config.getString("influx.queryTemplate"));
-        } else {
-            influxConfig.setQueryTemplate(System.getenv("INFLUX_QUERY_TEMPLATE"));
+            String oldTemplate = config.getString("influx.queryTemplate");
+            influxConfig.setQueryTemplate(oldTemplate); // This sets both templates if not already set
+        } else if (System.getenv("INFLUX_QUERY_TEMPLATE") != null) {
+            String oldTemplate = System.getenv("INFLUX_QUERY_TEMPLATE");
+            influxConfig.setQueryTemplate(oldTemplate); // This sets both templates if not already set
         }
 
         if (config.hasPath("influx.skipTlsValidation")) {
@@ -296,7 +312,9 @@ public class ConfigLoader {
             configFilePath,  // Current directory (already checked, but keep for absolute paths)
             "src/main/resources/" + configFilePath,  // Maven resources directory
             "config/" + configFilePath,  // Config subdirectory
-            "../" + configFilePath  // Parent directory
+            "../" + configFilePath,  // Parent directory
+            System.getProperty("user.dir") + File.separator + configFilePath,  // User's working directory
+            System.getProperty("user.dir") + File.separator + "src" + File.separator + "main" + File.separator + "resources" + File.separator + configFilePath  // Resources from working dir
         };
         
         for (String path : searchPaths) {

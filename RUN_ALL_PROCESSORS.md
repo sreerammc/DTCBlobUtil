@@ -22,7 +22,7 @@ java -cp target/blob-util-1.0.0.jar com.dtc.blobutil.BlobArchiveProcessor my-con
 
 ### 3. Influx Verification Processor
 ```bash
-java --add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED -cp target/blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf
+java --add-opens=java.base/java.nio=ALL-UNNAMED -cp target/blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf
 ```
 
 **Note:** The `--add-opens` JVM argument is required for Java 9+ when using Apache Arrow (used by InfluxDB 3 FlightSQL client). This exposes JDK internals needed by Arrow for memory management.
@@ -46,7 +46,7 @@ java -cp target/blob-util-1.0.0.jar com.dtc.blobutil.BlobArchiveProcessor my-con
 
 **Terminal 3:**
 ```bash
-java --add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED -cp target/blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf
+java --add-opens=java.base/java.nio=ALL-UNNAMED -cp target/blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf
 ```
 
 ### Option 2: Run in Background (Windows PowerShell)

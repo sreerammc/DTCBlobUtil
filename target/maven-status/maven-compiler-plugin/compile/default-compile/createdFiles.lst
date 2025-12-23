@@ -1,9 +1,11 @@
+com\dtc\blobutil\model\ExportedEvents.class
 com\dtc\blobutil\processor\BlobChangeFeedProcessor.class
 com\dtc\blobutil\processor\ArchiveFileProcessor$FileProcessingException.class
 com\dtc\blobutil\config\BlobStorageConfig.class
 com\dtc\blobutil\BlobChangeFeedSync.class
 com\dtc\blobutil\config\DatabaseConfig.class
 com\dtc\blobutil\dao\BlobChangeDao.class
+com\dtc\blobutil\model\EventObject.class
 com\dtc\blobutil\model\ExportedData.class
 com\dtc\blobutil\influx\InfluxHttpClient.class
 com\dtc\blobutil\influx\InfluxFlightClient.class

@@ -18,6 +18,9 @@ public class ComplexData {
     
     @JsonProperty("ExportedData")
     private ExportedData exportedData;
+    
+    @JsonProperty("ExportedEvents")
+    private ExportedEvents exportedEvents;
 
     public String getName() {
         return name;
@@ -49,6 +52,28 @@ public class ComplexData {
 
     public void setExportedData(ExportedData exportedData) {
         this.exportedData = exportedData;
+    }
+    
+    public ExportedEvents getExportedEvents() {
+        return exportedEvents;
+    }
+
+    public void setExportedEvents(ExportedEvents exportedEvents) {
+        this.exportedEvents = exportedEvents;
+    }
+    
+    /**
+     * Check if this is an events file (has ExportedEvents)
+     */
+    public boolean isEventsFile() {
+        return exportedEvents != null;
+    }
+    
+    /**
+     * Check if this is a data file (has ExportedData)
+     */
+    public boolean isDataFile() {
+        return exportedData != null;
     }
 }
 

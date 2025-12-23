@@ -54,8 +54,16 @@ influx {
   database = "iris_db"
   token = "YOUR_DB_TOKEN"
 
-  # SQL template; %s will be replaced with the file_name / blob_name
-  queryTemplate = "SELECT count(*) FROM iris_data \\n                   WHERE time >= NOW() - INTERVAL '1 day' \\n                     AND file_name = '%s'"
+  # SQL templates for different file types; %s will be replaced with the file_name / blob_name
+  # Files starting with "IRIS_Data_" will use queryDataTemplate
+  queryDataTemplate = "SELECT count(*) FROM iris_data \\n                   WHERE time >= NOW() - INTERVAL '1 day' \\n                     AND file_name = '%s'"
+  
+  # Files starting with "IRIS_Events_" will use queryEventsTemplate
+  queryEventsTemplate = "SELECT count(*) FROM iris_events \\n                   WHERE time >= NOW() - INTERVAL '1 day' \\n                     AND file_name = '%s'"
+  
+  # Deprecated: queryTemplate (use queryDataTemplate and queryEventsTemplate instead)
+  # If both queryDataTemplate and queryEventsTemplate are not set, queryTemplate will be used for both file types
+  # queryTemplate = "SELECT count(*) FROM iris_data \\n                   WHERE time >= NOW() - INTERVAL '1 day' \\n                     AND file_name = '%s'"
 
   # SSL / TLS handling:
   #   - false = normal TLS (validate certificate) - recommended for production

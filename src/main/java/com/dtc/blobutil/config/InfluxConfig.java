@@ -8,7 +8,9 @@ public class InfluxConfig {
     private int port;
     private String database;
     private String token;
-    private String queryTemplate;
+    private String queryDataTemplate; // Template for data files (IRIS_Data_*)
+    private String queryEventsTemplate; // Template for events files (IRIS_Events_*)
+    private String queryTemplate; // Deprecated: kept for backward compatibility
     private boolean skipTlsValidation;
     private String protocol; // "grpc", "http", or "https"
     private boolean useHttps; // Deprecated: use protocol instead
@@ -51,18 +53,63 @@ public class InfluxConfig {
     }
 
     /**
-     * SQL query template with a single %s placeholder for the file name.
+     * SQL query template for data files (IRIS_Data_*).
+     * Template should have a single %s placeholder for the file name.
      * For example:
      * SELECT count(*) FROM iris_data
      *   WHERE time >= NOW() - INTERVAL '1 day'
      *     AND file_name = '%s'
      */
+    public String getQueryDataTemplate() {
+        return queryDataTemplate;
+    }
+
+    public void setQueryDataTemplate(String queryDataTemplate) {
+        this.queryDataTemplate = queryDataTemplate;
+    }
+
+    /**
+     * SQL query template for events files (IRIS_Events_*).
+     * Template should have a single %s placeholder for the file name.
+     * For example:
+     * SELECT count(*) FROM iris_events
+     *   WHERE time >= NOW() - INTERVAL '1 day'
+     *     AND file_name = '%s'
+     */
+    public String getQueryEventsTemplate() {
+        return queryEventsTemplate;
+    }
+
+    public void setQueryEventsTemplate(String queryEventsTemplate) {
+        this.queryEventsTemplate = queryEventsTemplate;
+    }
+
+    /**
+     * @deprecated Use getQueryDataTemplate() and getQueryEventsTemplate() instead.
+     * This method returns queryDataTemplate if available, otherwise queryTemplate for backward compatibility.
+     */
+    @Deprecated
     public String getQueryTemplate() {
+        if (queryDataTemplate != null && !queryDataTemplate.isEmpty()) {
+            return queryDataTemplate;
+        }
         return queryTemplate;
     }
 
+    /**
+     * @deprecated Use setQueryDataTemplate() and setQueryEventsTemplate() instead.
+     * This method sets both templates to the same value for backward compatibility.
+     */
+    @Deprecated
     public void setQueryTemplate(String queryTemplate) {
         this.queryTemplate = queryTemplate;
+        // For backward compatibility, set both templates if not already set
+        if (this.queryDataTemplate == null || this.queryDataTemplate.isEmpty()) {
+            this.queryDataTemplate = queryTemplate;
+        }
+        if (this.queryEventsTemplate == null || this.queryEventsTemplate.isEmpty()) {
+            this.queryEventsTemplate = queryTemplate;
+        }
     }
 
     /**

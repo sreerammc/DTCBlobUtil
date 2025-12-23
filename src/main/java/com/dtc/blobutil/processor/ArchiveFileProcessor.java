@@ -10,6 +10,7 @@ import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.dtc.blobutil.config.BlobStorageConfig;
 import com.dtc.blobutil.model.ComplexData;
 import com.dtc.blobutil.model.DataObject;
+import com.dtc.blobutil.model.EventObject;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -172,28 +173,20 @@ public class ArchiveFileProcessor {
                     throw new FileProcessingException("Failed to parse JSON for blob: " + blobName + ". Error: " + e.getMessage(), e);
                 }
                 
-                if (complexData == null || complexData.getExportedData() == null) {
-                    logger.warn("Invalid file structure for blob: {} - ComplexData or ExportedData is null", blobName);
-                    throw new FileProcessingException("Invalid file structure for blob: " + blobName + " - ComplexData or ExportedData is null");
+                if (complexData == null) {
+                    logger.warn("Invalid file structure for blob: {} - ComplexData is null", blobName);
+                    throw new FileProcessingException("Invalid file structure for blob: " + blobName + " - ComplexData is null");
                 }
-
-                List<DataObject> objects = complexData.getExportedData().getObjects();
                 
-                if (objects == null || objects.isEmpty()) {
-                    logger.debug("No objects found in blob: {}", blobName);
-                    return new RecordCounts(0, 0);
+                // Check if this is an events file or data file
+                if (complexData.isEventsFile()) {
+                    return processEventsFile(complexData, blobName);
+                } else if (complexData.isDataFile()) {
+                    return processDataFile(complexData, blobName);
+                } else {
+                    logger.warn("Invalid file structure for blob: {} - Neither ExportedData nor ExportedEvents found", blobName);
+                    throw new FileProcessingException("Invalid file structure for blob: " + blobName + " - Neither ExportedData nor ExportedEvents found");
                 }
-
-                int totalRecords = objects.size();
-                
-                // Count distinct records (based on Id, Fullname, Time)
-                Set<DataObject> distinctObjects = new HashSet<>(objects);
-                int distinctRecords = distinctObjects.size();
-
-                logger.debug("Parsed blob {}: total records={}, distinct records={}", 
-                    blobName, totalRecords, distinctRecords);
-
-                return new RecordCounts(totalRecords, distinctRecords);
             }
         } catch (FileProcessingException e) {
             throw e; // Re-throw FileProcessingException as-is
@@ -201,6 +194,62 @@ public class ArchiveFileProcessor {
             logger.error("Error parsing file from archive container: {}", blobName, e);
             throw new FileProcessingException("Failed to parse file: " + blobName, e);
         }
+    }
+
+    /**
+     * Process data file (iris_data format) with ExportedData
+     */
+    private RecordCounts processDataFile(ComplexData complexData, String blobName) throws FileProcessingException {
+        if (complexData.getExportedData() == null) {
+            logger.warn("Invalid file structure for blob: {} - ExportedData is null", blobName);
+            throw new FileProcessingException("Invalid file structure for blob: " + blobName + " - ExportedData is null");
+        }
+
+        List<DataObject> objects = complexData.getExportedData().getObjects();
+        
+        if (objects == null || objects.isEmpty()) {
+            logger.debug("No objects found in data file: {}", blobName);
+            return new RecordCounts(0, 0);
+        }
+
+        int totalRecords = objects.size();
+        
+        // Count distinct records (based on Id, Fullname, Time)
+        Set<DataObject> distinctObjects = new HashSet<>(objects);
+        int distinctRecords = distinctObjects.size();
+
+        logger.debug("Parsed data file {}: total records={}, distinct records={}", 
+            blobName, totalRecords, distinctRecords);
+
+        return new RecordCounts(totalRecords, distinctRecords);
+    }
+    
+    /**
+     * Process events file (ExportedEvents format) with deduplication based on Id, RecordTime, SeqNo
+     */
+    private RecordCounts processEventsFile(ComplexData complexData, String blobName) throws FileProcessingException {
+        if (complexData.getExportedEvents() == null) {
+            logger.warn("Invalid file structure for blob: {} - ExportedEvents is null", blobName);
+            throw new FileProcessingException("Invalid file structure for blob: " + blobName + " - ExportedEvents is null");
+        }
+
+        List<EventObject> events = complexData.getExportedEvents().getObjects();
+        
+        if (events == null || events.isEmpty()) {
+            logger.debug("No events found in events file: {}", blobName);
+            return new RecordCounts(0, 0);
+        }
+
+        int totalRecords = events.size();
+        
+        // Count distinct records (based on Id, RecordTime, SeqNo)
+        Set<EventObject> distinctEvents = new HashSet<>(events);
+        int distinctRecords = distinctEvents.size();
+
+        logger.debug("Parsed events file {}: total records={}, distinct records={}", 
+            blobName, totalRecords, distinctRecords);
+
+        return new RecordCounts(totalRecords, distinctRecords);
     }
 
     /**

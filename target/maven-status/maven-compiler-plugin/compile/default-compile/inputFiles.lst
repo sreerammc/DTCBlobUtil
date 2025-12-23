@@ -3,11 +3,13 @@ C:\Dev\dtcBlobutil\src\main\java\com\dtc\blobutil\InfluxVerificationProcessor.ja
 C:\Dev\dtcBlobutil\src\main\java\com\dtc\blobutil\config\DatabaseConfig.java
 C:\Dev\dtcBlobutil\src\main\java\com\dtc\blobutil\model\BlobChangeEvent.java
 C:\Dev\dtcBlobutil\src\main\java\com\dtc\blobutil\processor\BlobChangeFeedProcessor.java
+C:\Dev\dtcBlobutil\src\main\java\com\dtc\blobutil\model\ExportedEvents.java
 C:\Dev\dtcBlobutil\src\main\java\com\dtc\blobutil\model\ComplexData.java
 C:\Dev\dtcBlobutil\src\main\java\com\dtc\blobutil\influx\InfluxFlightClient.java
 C:\Dev\dtcBlobutil\src\main\java\com\dtc\blobutil\processor\ArchiveFileProcessor.java
 C:\Dev\dtcBlobutil\src\main\java\com\dtc\blobutil\model\DataObject.java
 C:\Dev\dtcBlobutil\src\main\java\com\dtc\blobutil\BlobArchiveProcessor.java
+C:\Dev\dtcBlobutil\src\main\java\com\dtc\blobutil\model\EventObject.java
 C:\Dev\dtcBlobutil\src\main\java\com\dtc\blobutil\BlobChangeFeedSync.java
 C:\Dev\dtcBlobutil\src\main\java\com\dtc\blobutil\config\AppConfig.java
 C:\Dev\dtcBlobutil\src\main\java\com\dtc\blobutil\model\ExportedData.java

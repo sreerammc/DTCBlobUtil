@@ -5,15 +5,15 @@ echo ========================================
 echo.
 
 echo [1/3] Starting Blob Change Feed Sync...
-start "Blob Change Feed Sync" cmd /k "java -cp target\blob-util-1.0.0.jar com.dtc.blobutil.BlobChangeFeedSync my-config.conf"
+start "Blob Change Feed Sync" cmd /k "cd /d %~dp0 && java -cp target\blob-util-1.0.0.jar com.dtc.blobutil.BlobChangeFeedSync my-config.conf"
 timeout /t 2 /nobreak >nul
 
 echo [2/3] Starting Blob Archive Processor...
-start "Blob Archive Processor" cmd /k "java -cp target\blob-util-1.0.0.jar com.dtc.blobutil.BlobArchiveProcessor my-config.conf"
+start "Blob Archive Processor" cmd /k "cd /d %~dp0 && java -cp target\blob-util-1.0.0.jar com.dtc.blobutil.BlobArchiveProcessor my-config.conf"
 timeout /t 2 /nobreak >nul
 
 echo [3/3] Starting Influx Verification Processor...
-start "Influx Verification Processor" cmd /k "java --add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED -cp target\blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf"
+start "Influx Verification Processor" cmd /k "cd /d %~dp0 && java --add-opens=java.base/java.nio=ALL-UNNAMED -cp target\blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf"
 timeout /t 2 /nobreak >nul
 
 echo.

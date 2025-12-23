@@ -100,8 +100,11 @@ public class InfluxVerificationProcessor {
                     ("grpc".equalsIgnoreCase(protocol) ? "FlightSQL" : "HTTP"));
             }
 
-            if (influxConfig.getQueryTemplate() == null || influxConfig.getQueryTemplate().isEmpty()) {
-                throw new IllegalArgumentException("influx.queryTemplate is required in configuration");
+            // Validate that at least one template is configured
+            if ((influxConfig.getQueryDataTemplate() == null || influxConfig.getQueryDataTemplate().isEmpty()) &&
+                (influxConfig.getQueryEventsTemplate() == null || influxConfig.getQueryEventsTemplate().isEmpty()) &&
+                (influxConfig.getQueryTemplate() == null || influxConfig.getQueryTemplate().isEmpty())) {
+                throw new IllegalArgumentException("Either influx.queryDataTemplate and influx.queryEventsTemplate, or influx.queryTemplate (deprecated) is required in configuration");
             }
 
             // Optional: reuse blob polling interval for verification loop
@@ -114,7 +117,7 @@ public class InfluxVerificationProcessor {
                 boolean running = true;
                 while (running) {
                     try {
-                        processInfluxVerifications(dao, influxClient, influxConfig.getQueryTemplate());
+                        processInfluxVerifications(dao, influxClient, influxConfig);
 
                         logger.debug("Waiting {} seconds before next verification cycle...", pollingIntervalSeconds);
                         Thread.sleep(TimeUnit.SECONDS.toMillis(pollingIntervalSeconds));
@@ -147,7 +150,7 @@ public class InfluxVerificationProcessor {
      */
     private static void processInfluxVerifications(BlobChangeDao dao,
                                                    InfluxClient influxClient,
-                                                   String queryTemplate) {
+                                                   InfluxConfig influxConfig) {
         try {
             List<String> blobNames = dao.getBlobNamesForInfluxVerification();
 
@@ -170,6 +173,13 @@ public class InfluxVerificationProcessor {
                         dao.updateProcessingStatus(blobName, "VERIFYING");
                     } catch (Exception e) {
                         logger.warn("Failed to update status to VERIFYING for blob: {}", blobName, e);
+                    }
+
+                    // Determine file type and select appropriate query template
+                    String queryTemplate = getQueryTemplateForBlob(blobName, influxConfig);
+                    if (queryTemplate == null || queryTemplate.isEmpty()) {
+                        logger.error("No query template found for blob: {} (type detection failed)", blobName);
+                        throw new IllegalArgumentException("No query template configured for blob type: " + blobName);
                     }
 
                     String sql = String.format(queryTemplate, blobName);
@@ -202,6 +212,39 @@ public class InfluxVerificationProcessor {
             logger.error("Error running Influx verification cycle", e);
             throw new RuntimeException("Failed to run Influx verification cycle", e);
         }
+    }
+
+    /**
+     * Determine the appropriate query template based on blob name.
+     * Files starting with "IRIS_Data_" use queryDataTemplate.
+     * Files starting with "IRIS_Events_" use queryEventsTemplate.
+     * Falls back to deprecated queryTemplate if specific templates are not set.
+     */
+    private static String getQueryTemplateForBlob(String blobName, InfluxConfig influxConfig) {
+        if (blobName != null) {
+            if (blobName.startsWith("IRIS_Data_")) {
+                String template = influxConfig.getQueryDataTemplate();
+                if (template != null && !template.isEmpty()) {
+                    logger.debug("Using data query template for blob: {}", blobName);
+                    return template;
+                }
+            } else if (blobName.startsWith("IRIS_Events_")) {
+                String template = influxConfig.getQueryEventsTemplate();
+                if (template != null && !template.isEmpty()) {
+                    logger.debug("Using events query template for blob: {}", blobName);
+                    return template;
+                }
+            }
+        }
+        
+        // Fallback to deprecated queryTemplate for backward compatibility
+        String fallbackTemplate = influxConfig.getQueryTemplate();
+        if (fallbackTemplate != null && !fallbackTemplate.isEmpty()) {
+            logger.debug("Using fallback query template for blob: {}", blobName);
+            return fallbackTemplate;
+        }
+        
+        return null;
     }
 
     /**
@@ -286,16 +329,16 @@ public class InfluxVerificationProcessor {
         System.out.println("Influx Verification Processor");
         System.out.println();
         System.out.println("Usage:");
-        System.out.println("  java --add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED -cp blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor [options] [config-file]");
+        System.out.println("  java --add-opens=java.base/java.nio=ALL-UNNAMED -cp blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor [options] [config-file]");
         System.out.println();
         System.out.println("Options:");
         System.out.println("  -c, --config <file>    Path to configuration file");
         System.out.println("  -h, --help             Show this help message");
         System.out.println();
         System.out.println("Examples:");
-        System.out.println("  java --add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED -cp blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor");
-        System.out.println("  java --add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED -cp blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf");
-        System.out.println("  java --add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED -cp blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor -c /path/to/config.conf");
+        System.out.println("  java --add-opens=java.base/java.nio=ALL-UNNAMED -cp blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor");
+        System.out.println("  java --add-opens=java.base/java.nio=ALL-UNNAMED -cp blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor my-config.conf");
+        System.out.println("  java --add-opens=java.base/java.nio=ALL-UNNAMED -cp blob-util-1.0.0.jar com.dtc.blobutil.InfluxVerificationProcessor -c /path/to/config.conf");
         System.out.println();
         System.out.println("Note: The --add-opens JVM argument is required for Java 9+ when using Apache Arrow");
         System.out.println("      (used by InfluxDB 3 FlightSQL client). This exposes JDK internals needed by Arrow.");
